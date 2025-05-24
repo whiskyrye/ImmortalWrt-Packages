@@ -50,9 +50,8 @@ jobs:
           if [ "$status" == "## main...origin/main" ];then
               echo "nothing to commit, working tree clean"
           else
-          Emoji=("🎉" "🤞" "✨" "🎁" "🎈" "🎄" "🎨" "💋" "🍓" "🍕" "🍉" "💐" "🌴" "🚀" "🛸" "🗽" "⛅" "🌈" "🔥" "⛄" "🐶" "🏅" "🦄" "🐤")
           git add .
-          git commit -m "${Emoji[$[$RANDOM % ${#Emoji[@]}]]} Sync $(TZ='Asia/Shanghai' date +%Y-%m-%d" "%H:%M:%S)${Emoji[$[$RANDOM % ${#Emoji[@]}]]}"
+          git commit -m "Sync $(TZ='Asia/Shanghai' date +%Y-%m-%d" "%H:%M:%S)}"
           fi
         
       - name: Push changes
