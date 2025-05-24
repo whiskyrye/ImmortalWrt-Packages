@@ -51,7 +51,7 @@ jobs:
               echo "nothing to commit, working tree clean"
           else
           git add .
-          git commit -m "Sync $(TZ='Asia/Shanghai' date +%Y-%m-%d" "%H:%M:%S)}"
+          git commit -m "Sync $(TZ='Asia/Shanghai' date +%Y-%m-%d" "%H:%M:%S)"
           fi
         
       - name: Push changes
