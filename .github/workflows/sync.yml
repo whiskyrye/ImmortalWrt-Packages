@@ -1,4 +1,4 @@
-name: Update OpenWrt Packages
+name: Update Immortalwrt Packages
 on: 
   push:
     branches: [ main ]
@@ -10,7 +10,7 @@ env:
   TZ: Asia/Shanghai
 
 jobs:
-  Update_OpenWrt_Packages:
+  Update_ImmortalWrt_Packages:
     runs-on: ubuntu-latest
 
     permissions: 
