@@ -1,5 +1,5 @@
-# ImmortalWrt-Packages
-常用 ImmortalWrt 软件包收集
+# OpenWrt-Packages
+常用 OpenWrt 软件包收集
 
 |软件|作者|功能|包类型|更新日期|
 |:-|:-|:-|:-|:-|
