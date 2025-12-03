@@ -94,8 +94,8 @@ def CreatReadme(fileName, packageList):
         os.remove(fileName)
     
     with open(fileName, 'a') as f:
-        f.write("# OpenWrt-Packages\n")
-        f.write("常用 OpenWrt 软件包收集\n")
+        f.write("# ImmortalWrt-Packages\n")
+        f.write("常用 ImmortalWrt 软件包收集\n")
         f.write("\n")
         f.write("|软件|作者|功能|包类型|更新日期|\n")
         f.write("|:-|:-|:-|:-|:-|\n")
