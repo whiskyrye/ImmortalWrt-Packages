@@ -9,7 +9,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=lucky
-PKG_VERSION:=2.24.0
+PKG_VERSION:=2.27.2
 PKG_RELEASE:=1
 PKGARCH:=all 
 
@@ -19,9 +19,6 @@ endif
 ifeq ($(ARCH),mips)
 	LUCKY_ARCH:=mips_softfloat
 endif
-ifeq ($(ARCH),86)
-	LUCKY_ARCH:=i386
-endif
 ifeq ($(ARCH),i386)
 	LUCKY_ARCH:=i386
 endif
@@ -29,17 +26,25 @@ ifeq ($(ARCH),x86_64)
 	LUCKY_ARCH:=x86_64
 endif
 ifeq ($(ARCH),arm)
-	LUCKY_ARCH:=armv5
-endif
-ifeq ($(ARCH),arm7)
+	ifeq ($(BOARD),bcm53xx)
+		LUCKY_ARCH:=armv6
+	else
 	LUCKY_ARCH:=armv7
 endif
-ifeq ($(ARCH),armv8)
-	LUCKY_ARCH:=arm64
+endif
+ifeq ($(BOARD),bcm53xx)
+	LUCKY_ARCH:=armv6
+ifeq ($(word 2,$(subst +,$(space),$(call qstrip,$(CONFIG_CPU_TYPE)))),)
+	LUCKY_ARCH:=armv5
+endif
+endif
+ifeq ($(BOARD),kirkwood)
+	LUCKY_ARCH:=armv5
 endif
 ifeq ($(ARCH),aarch64)
 	LUCKY_ARCH:=arm64
 endif
+
 PKG_LICENSE:=GPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=GDY666 <gdy666@foxmail.com>
@@ -63,7 +68,7 @@ endef
 
 define Build/Prepare
 	[ ! -f $(PKG_BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz ] && wget https://github.com/gdy666/lucky/releases/download/v$(PKG_VERSION)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz -O $(PKG_BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz
-	tar -xzvf $(PKG_BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz -C $(PKG_BUILD_DIR)
+	tar -xzvf $(PKG_BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz -C $(PKG_BUILD_DIR) || exit 1
 endef
 
 define Package/$(PKG_NAME)/conffiles
