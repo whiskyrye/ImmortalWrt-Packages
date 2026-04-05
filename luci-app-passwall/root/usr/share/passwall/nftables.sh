@@ -793,50 +793,76 @@ filter_vpsip() {
 }
 
 filter_server_port() {
-	local address=${1}
-	local port=${2}
-	local stream=${3}
-	stream=$(echo ${3} | tr 'A-Z' 'a-z')
-	local _is_tproxy
-	_is_tproxy=${is_tproxy}
-	[ "$stream" == "udp" ] && _is_tproxy="TPROXY"
-
-	for _ipt in 4 6; do
-		[ "$_ipt" == "4" ] && _ip_type=ip
-		[ "$_ipt" == "6" ] && _ip_type=ip6
-		nft "list chain $NFTABLE_NAME $nft_output_chain" 2>/dev/null | grep -q "${address}:${port}"
-		if [ $? -ne 0 ]; then
-			nft "insert rule $NFTABLE_NAME $nft_output_chain meta l4proto $stream $_ip_type daddr $address $stream dport $port return comment \"${address}:${port}\"" 2>/dev/null
-		fi
+	local address="$1"
+	local port=$(echo "$2" | tr ':' '-' | tr -d ' ')
+	local stream=$(echo "$3" | tr 'A-Z' 'a-z')
+	local _ip_type _port_expr _ver _is_tproxy
+	local _nft_output_chain="PSW_OUTPUT_NAT"
+	[ "$(config_t_get global_forwarding tcp_proxy_way redirect)" = "tproxy" ] && _is_tproxy="TPROXY"
+	[ "$stream" = "udp" ] && _is_tproxy="TPROXY"
+	[ -n "$_is_tproxy" ] && _nft_output_chain="PSW_OUTPUT_MANGLE"
+	case "$port" in
+		*,*) _port_expr="{ $port }" ;;
+		*)   _port_expr="$port" ;;
+	esac
+	for _ver in 4 6; do
+		[ "$_ver" = "4" ] && _ip_type="ip"
+		[ "$_ver" = "6" ] && _ip_type="ip6" && _nft_output_chain="PSW_OUTPUT_MANGLE_V6"
+		nft list chain "$NFTABLE_NAME" "$_nft_output_chain" 2>/dev/null | grep -q "comment \"${address}:${port}:${stream}\"" || \
+		nft insert rule "$NFTABLE_NAME" "$_nft_output_chain" meta l4proto "$stream" $_ip_type daddr "$address" "$stream" dport $_port_expr return comment "\"${address}:${port}:${stream}\"" 2>/dev/null
 	done
 }
 
 filter_node() {
-	local node=${1}
-	local stream=${2}
-	if [ -n "$node" ]; then
-		local address=$(config_n_get $node address)
-		local port=$(config_n_get $node port)
-		[ -z "$address" ] && [ -z "$port" ] && {
-			return 1
-		}
-		filter_server_port $address $port $stream
-		filter_server_port $address $port $stream
-	fi
+	local node="$1" stream="$2"
+	[ -z "$node" ] && return 1
+	local address=$(config_n_get "$node" address)
+	local port=$(config_n_get "$node" port)
+	local hop=$(config_n_get "$node" hysteria2_hop)
+	[ -n "$hop" ] && port="${port:+$port,}$hop" 
+	[ -z "$address" -o -z "$port" ] && return 1
+	filter_server_port "$address" "$port" "$stream"
 }
 
 filter_direct_node_list() {
 	[ ! -s "$TMP_PATH/direct_node_list" ] && return
-	for _node_id in $(cat $TMP_PATH/direct_node_list | awk '!seen[$0]++'); do
+	awk '!seen[$0]++' "$TMP_PATH/direct_node_list" | while read -r _node_id; do
 		filter_node "$_node_id" TCP
 		filter_node "$_node_id" UDP
 		unset _node_id
 	done
 }
 
+
+del_script_mwan3() {
+	[ -s "/etc/init.d/mwan3" ] && sed -i "/${CONFIG}/d" /etc/init.d/mwan3 >/dev/null 2>&1
+}
+
+add_script_mwan3() {
+	del_script_mwan3
+	[ -s "/etc/init.d/mwan3" ] && {
+		sed -i '/start_service()/,/}/ s/^}/    \/usr\/share\/passwall\/nftables.sh mwan3_start\n}/' /etc/init.d/mwan3
+		sed -i '/stop_service().*{/a \    \/usr\/share\/passwall\/nftables.sh mwan3_stop' /etc/init.d/mwan3
+	}
+}
+
+mwan3_stop() {
+	local handles=$(nft -a list chain ip mangle mwan3_hook 2>/dev/null | grep "${FWMARK}" | awk -F '# handle ' '{print$2}')
+	for handle in $handles; do
+		nft delete rule ip mangle mwan3_hook handle ${handle} 2>/dev/null
+	done
+}
+
+mwan3_start() {
+	mwan3_stop
+	nft list chain ip mangle mwan3_hook >/dev/null 2>&1 && nft insert rule ip mangle mwan3_hook ct mark ${FWMARK} counter return >/dev/null 2>&1
+}
+
 add_firewall_rule() {
 	echolog "开始加载 nftables 防火墙规则..."
 	gen_nft_tables
+	add_script_mwan3
+	mwan3_start
 	gen_nftset $NFTSET_WAN ipv4_addr 0 "-1"
 	gen_nftset $NFTSET_VPS ipv4_addr 0 "-1"
 	gen_nftset $NFTSET_GFW ipv4_addr "2d" 0
@@ -1011,7 +1037,8 @@ add_firewall_rule() {
 
 	nft "add chain $NFTABLE_NAME PSW_DIVERT"
 	nft "flush chain $NFTABLE_NAME PSW_DIVERT"
-	nft "add rule $NFTABLE_NAME PSW_DIVERT meta l4proto { tcp, udp } socket transparent 1 mark set ${FWMARK} counter accept"
+	# Only TCP, UDP Invalid.
+	nft "add rule $NFTABLE_NAME PSW_DIVERT meta l4proto tcp socket transparent 1 mark set ${FWMARK} counter accept"
 
 	nft "add chain $NFTABLE_NAME PSW_DNS"
 	nft "flush chain $NFTABLE_NAME PSW_DNS"
@@ -1037,14 +1064,15 @@ add_firewall_rule() {
 	nft "flush chain $NFTABLE_NAME PSW_MANGLE"
 	nft "add rule $NFTABLE_NAME PSW_MANGLE ip daddr @$NFTSET_LAN counter return"
 	nft "add rule $NFTABLE_NAME PSW_MANGLE ip daddr @$NFTSET_VPS counter return"
+	nft "add rule $NFTABLE_NAME PSW_MANGLE ct direction reply counter return"
 
 	nft "add chain $NFTABLE_NAME PSW_OUTPUT_MANGLE"
 	nft "flush chain $NFTABLE_NAME PSW_OUTPUT_MANGLE"
 	nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE ip daddr @$NFTSET_LAN counter return"
 	nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE ip daddr @$NFTSET_VPS counter return"
-
 	[ "${USE_BLOCK_LIST}" = "1" ] && nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE ip daddr @$NFTSET_BLOCK counter drop"
 	[ "${USE_DIRECT_LIST}" = "1" ] && nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE ip daddr @$NFTSET_WHITE counter return"
+	nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE ct direction reply counter return"
 	nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE meta mark 255 counter return"
 
 	# jump chains
@@ -1097,7 +1125,7 @@ add_firewall_rule() {
 	fi
 	unset WAN_IP wan_ip
 
-	ip rule add fwmark ${FWMARK} lookup 999 priority 999
+	ip rule add fwmark ${FWMARK} table 999 priority 999
 	ip route add local 0.0.0.0/0 dev lo table 999
 
 	#ipv6 tproxy mode and udp
@@ -1105,6 +1133,7 @@ add_firewall_rule() {
 	nft "flush chain $NFTABLE_NAME PSW_MANGLE_V6"
 	nft "add rule $NFTABLE_NAME PSW_MANGLE_V6 ip6 daddr @$NFTSET_LAN6 counter return"
 	nft "add rule $NFTABLE_NAME PSW_MANGLE_V6 ip6 daddr @$NFTSET_VPS6 counter return"
+	nft "add rule $NFTABLE_NAME PSW_MANGLE_V6 ct direction reply counter return"
 
 	nft "add chain $NFTABLE_NAME PSW_OUTPUT_MANGLE_V6"
 	nft "flush chain $NFTABLE_NAME PSW_OUTPUT_MANGLE_V6"
@@ -1112,6 +1141,7 @@ add_firewall_rule() {
 	nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE_V6 ip6 daddr @$NFTSET_VPS6 counter return"
 	[ "${USE_BLOCK_LIST}" = "1" ] && nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE_V6 ip6 daddr @$NFTSET_BLOCK6 counter drop"
 	[ "${USE_DIRECT_LIST}" = "1" ] && nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE_V6 ip6 daddr @$NFTSET_WHITE6 counter return"
+	nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE_V6 ct direction reply counter return"
 	nft "add rule $NFTABLE_NAME PSW_OUTPUT_MANGLE_V6 meta mark 255 counter return"
 
 	[ -n "$IPT_APPEND_DNS" ] && {
@@ -1379,10 +1409,10 @@ del_firewall_rule() {
 	# Need to be removed at the end, otherwise it will show "Resource busy"
 	nft delete chain $NFTABLE_NAME handle $(nft -a list chains | grep -E "PSW_RULE" | awk -F '# handle ' '{print$2}') 2>/dev/null
 
-	ip rule del fwmark ${FWMARK} lookup 999 priority 999 2>/dev/null
+	ip rule del fwmark ${FWMARK} 2>/dev/null
 	ip route del local 0.0.0.0/0 dev lo table 999 2>/dev/null
 
-	ip -6 rule del fwmark ${FWMARK} lookup 999 priority 999 2>/dev/null
+	ip -6 rule del fwmark ${FWMARK} 2>/dev/null
 	ip -6 route del local ::/0 dev lo table 999 2>/dev/null
 
 	destroy_nftset $NFTSET_LOCAL
@@ -1406,6 +1436,8 @@ del_firewall_rule() {
 	#destroy_nftset $NFTSET_BLACK6
 	destroy_nftset $NFTSET_BLOCK6
 	destroy_nftset $NFTSET_WHITE6
+
+	del_script_mwan3
 
 	echolog "删除 nftables 规则完成。"
 }
@@ -1488,6 +1520,12 @@ insert_nftset)
 	;;
 filter_direct_node_list)
 	filter_direct_node_list
+	;;
+mwan3_start)
+	mwan3_start
+	;;
+mwan3_stop)
+	mwan3_stop
 	;;
 stop)
 	stop
