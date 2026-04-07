@@ -284,7 +284,19 @@ function gen_outbound(flag, node, tag, proxy_table)
 							udpHop = (node.hysteria2_hop) and {
 								ports = string.gsub(node.hysteria2_hop, ":", "-"),
 								interval = (function(v)
-									v = tonumber((v or "30s"):match("^%d+"))
+									if not v then return 30 end
+									if v:find("-", 1, true) then
+										local min, max = v:match("^(%d+)%-(%d+)$")
+										min = tonumber(min)
+										max = tonumber(max)
+										if min and max then
+											min = (min >= 5) and min or 5
+											max = (max >= min) and max or min
+											return min .. "-" .. max
+										end
+										return 30
+									end
+									v = tonumber((v or "30"):match("^%d+"))
 									return (v and v >= 5) and v or 30
 								end)(node.hysteria2_hop_interval)
 							} or nil,
@@ -1047,14 +1059,25 @@ function gen_config(var)
 				else
 					local preproxy_node = get_node_by_id(node.preproxy_node)
 					if preproxy_node then
-						local preproxy_outbound = gen_outbound(node[".name"], preproxy_node)
+						local preproxy_outbound, exist
+						if preproxy_node.protocol == "_balancing" then
+							local balancer_tag, loopback_outbound = gen_balancer(preproxy_node)
+							if loopback_outbound then
+								preproxy_outbound = loopback_outbound
+								exist = true
+							end
+						else
+							preproxy_outbound = gen_outbound(node[".name"], preproxy_node)
+						end
 						if preproxy_outbound then
 							outbound.tag = preproxy_outbound.tag .. " -> " .. outbound.tag
 							outbound.proxySettings = {
 								tag = preproxy_outbound.tag,
 								transportLayer = true
 							}
-							last_insert_outbound = preproxy_outbound
+							if not exist then
+								last_insert_outbound = preproxy_outbound
+							end
 							default_outTag = outbound.tag
 						end
 					end
@@ -1064,17 +1087,17 @@ function gen_config(var)
 				local to_node = get_node_by_id(node.to_node)
 				if to_node then
 					-- Landing Node not support use special node.
-					if to_node.protocol:find("^_") then
+					if to_node.protocol and to_node.protocol:find("^_") then
 						to_node = nil
 					end
 				end
 				if to_node then
 					local to_outbound
 					if to_node.type ~= "Xray" then
-						local tag = to_node[".name"]
+						local in_tag = "inbound_" .. to_node[".name"] .. "_" .. tostring(outbound.tag)
 						local new_port = api.get_new_port()
 						table.insert(inbounds, {
-							tag = tag,
+							tag = in_tag,
 							listen = "127.0.0.1",
 							port = new_port,
 							protocol = "dokodemo-door",
@@ -1086,11 +1109,11 @@ function gen_config(var)
 						to_node.address = "127.0.0.1"
 						to_node.port = new_port
 						table.insert(rules, 1, {
-							inboundTag = {tag},
+							inboundTag = {in_tag},
 							outboundTag = outbound.tag
 						})
-						to_outbound = gen_outbound(node[".name"], to_node, tag, {
-							tag = tag,
+						to_outbound = gen_outbound(node[".name"], to_node, to_node[".name"], {
+							tag = to_node[".name"],
 							run_socks_instance = not no_run
 						})
 					else
