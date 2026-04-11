@@ -725,7 +725,9 @@ o.datatype = "uinteger"
 o.placeholder = 0
 o:depends({ [_n("protocol")] = "vless" })
 
-o = s:option(ListValue, _n("domain_resolver"), translate("Domain DNS Resolve"), translate("If the node address is a domain name, this DNS will be used for resolution."))
+o = s:option(ListValue, _n("domain_resolver"), translate("Domain DNS Resolve"))
+o.description = translate("If the node address is a domain name, this DNS will be used for resolution.") .. "<br>" .. string.format('<font color="red">%s</font>',
+		translate("Note: For node-specific DNS only. Keep Auto to avoid extra overhead."))
 o:value("", translate("Auto"))
 o:value("tcp", "TCP")
 o:value("udp", "UDP")
@@ -748,6 +750,8 @@ o:depends({ [_n("domain_resolver")] = "https" })
 o = s:option(ListValue, _n("domain_strategy"), translate("Domain Strategy"), translate("If is domain name, The requested domain name will be resolved to IP before connect."))
 o.default = ""
 o:value("", translate("Auto"))
+o:value("UseIPv4v6", translate("Prefer IPv4"))
+o:value("UseIPv6v4", translate("Prefer IPv6"))
 o:value("UseIPv4", translate("IPv4 Only"))
 o:value("UseIPv6", translate("IPv6 Only"))
 

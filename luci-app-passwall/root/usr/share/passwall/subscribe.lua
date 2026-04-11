@@ -42,8 +42,7 @@ local core_has = {
 	["trojan-plus"] = has_trojan_plus, ["hysteria2"] = has_hysteria2
 }
 ----
-local domain_strategy_default = uci:get(appname, "@global_subscribe[0]", "domain_strategy") or ""
-local domain_strategy_node = ""
+local domain_resolver, domain_resolver_dns, domain_resolver_dns_https, domain_strategy
 local preproxy_node_group, to_node_group, chain_node_type = "", "", ""
 -- 判断是否过滤节点关键字
 local filter_keyword_mode_default = uci:get(appname, "@global_subscribe[0]", "filter_keyword_mode") or "0"
@@ -1855,9 +1854,23 @@ local function update_node(manual)
 					if kkk ~= "group" or vvv ~= "default" then
 						uci:set(appname, cfgid, kkk, vvv)
 					end
-					-- sing-box 域名解析策略
-					if kkk == "type" and vvv == "sing-box" then
-						uci:set(appname, cfgid, "domain_strategy", domain_strategy_node)
+					-- sing-box/xray 节点域名解析
+					if kkk == "type" and (vvv == "Xray" or vvv == "sing-box") then
+						if domain_resolver then
+							uci:set(appname, cfgid, "domain_resolver", domain_resolver)
+							if domain_resolver_dns then
+								uci:set(appname, cfgid, "domain_resolver_dns", domain_resolver_dns)
+							elseif domain_resolver_dns_https then
+								uci:set(appname, cfgid, "domain_resolver_dns_https", domain_resolver_dns_https)
+							end
+						end
+						if domain_strategy then
+							if vvv == "sing-box" then
+								local map = { UseIPv4v6 = "prefer_ipv4", UseIPv6v4 = "prefer_ipv6", UseIPv4 = "ipv4_only", UseIPv6 = "ipv6_only" }
+								domain_strategy = map[domain_strategy or ""]
+							end
+							uci:set(appname, cfgid, "domain_strategy", domain_strategy)
+						end
 					end
 					-- 订阅组链式代理
 					if chain_node_type ~= "" and kkk == "type" and (vvv == "Xray" or vvv == "sing-box") then
@@ -2069,12 +2082,12 @@ local execute = function()
 			if hysteria2_type ~= "global" and core_has[hysteria2_type] then
 				hysteria2_type_default = hysteria2_type
 			end
-			local domain_strategy = value.domain_strategy or "global"
-			if domain_strategy ~= "global" then
-				domain_strategy_node = domain_strategy
-			else
-				domain_strategy_node = domain_strategy_default
-			end
+
+			domain_resolver = value.domain_resolver
+			domain_resolver_dns = value.domain_resolver_dns
+			domain_resolver_dns_https = value.domain_resolver_dns_https
+			local map = { UseIPv4v6 = 1, UseIPv6v4 = 1, UseIPv4 = 1, UseIPv6 = 1 }
+			domain_strategy = (not map[value.domain_strategy or ""]) and value.domain_strategy or nil
 
 			-- 订阅组链式代理
 			local function valid_chain_node(node)
