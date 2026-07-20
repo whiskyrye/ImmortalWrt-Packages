@@ -23,6 +23,6 @@
 |[luci-app-onliner](https://github.com/danchexiaoyang/luci-app-onliner)|danchexiaoyang|在线设备查看|multi|20260430|
 |[luci-app-easytier](https://github.com/EasyTier/luci-app-easytier)|EasyTier|EasyTier异地组网|multi|20260624|
 |[luci-app-momo](https://github.com/nikkinikki-org/OpenWrt-momo)|nikki-org|momo singbox插件|single|20260616|
-|[openwrt-bandix](https://github.com/timsaya/openwrt-bandix)|timsaya|luci-app-bandix 的依赖包|single|20260515|
+|[openwrt-bandix](https://github.com/timsaya/openwrt-bandix)|timsaya|luci-app-bandix 的依赖包|multi|20260515|
 |[luci-app-bandix](https://github.com/timsaya/luci-app-bandix)|timsaya|网络流量监控(单网口)|single|20260526|
 |[luci-app-bandix-plus](https://github.com/timsaya/luci-app-bandix-plus)|timsaya|网络流量监控(多网口)|single|20260702|
