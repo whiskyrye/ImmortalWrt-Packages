@@ -25,5 +25,5 @@
 |[luci-app-momo](https://github.com/nikkinikki-org/OpenWrt-momo)|nikki-org|momo singbox插件|single|20260616|
 |[openwrt-bandix](https://github.com/timsaya/openwrt-bandix)|timsaya|luci-app-bandix 的依赖包|multi|20260515|
 |[luci-app-bandix](https://github.com/timsaya/luci-app-bandix)|timsaya|网络流量监控(单网口)|multi|20260526|
-|[openwrt-bandix-plus](https://github.com/timsaya/openwrt-bandix-plus)|timsaya|luci-app-bandix-plus 的依赖包|multi|20260515|
+|[openwrt-bandix-plus](https://github.com/timsaya/openwrt-bandix-plus)|timsaya|luci-app-bandix-plus 的依赖包|multi|20260621|
 |[luci-app-bandix-plus](https://github.com/timsaya/luci-app-bandix-plus)|timsaya|网络流量监控(多网口)|multi|20260702|
