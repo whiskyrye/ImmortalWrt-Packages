@@ -13,7 +13,6 @@
 |[luci-app-passwall](https://github.com/Openwrt-Passwall/openwrt-passwall)|Openwrt-Passwall|openwrt-passwall|multi|20260721|
 |[luci-app-passwall2](https://github.com/Openwrt-Passwall/openwrt-passwall2)|Openwrt-Passwall|openwrt-passwall2|multi|20260716|
 |[luci-app-smartdns](https://github.com/pymumu/luci-app-smartdns)|pymumu|smartdns|single|20260708|
-|[luci-app-store](https://github.com/linkease/istore)|linkease|istore 应用市场|multi|20260629|
 |[luci-app-tailscale](https://github.com/asvow/luci-app-tailscale)|asvow|tailscale|single|20250509|
 |[luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon)|jerrykuku|argon 主题|single|20260719|
 |[passwall-packages](https://github.com/xiaorouji/openwrt-passwall-packages)|xiaorouji|passwall、passwall2 依赖|multi|20260713|
