@@ -24,4 +24,4 @@
 |[luci-app-bandix](https://github.com/timsaya/luci-app-bandix)|timsaya|网络流量监控(单网口)|multi|20260526|
 |[openwrt-bandix-plus](https://github.com/timsaya/openwrt-bandix-plus)|timsaya|luci-app-bandix-plus 的依赖包|multi|20260621|
 |[luci-app-bandix-plus](https://github.com/timsaya/luci-app-bandix-plus)|timsaya|网络流量监控(多网口)|multi|20260702|
-|[luci-app-store](https://github.com/linkease/istore)|linkease|istore 应用市场|single|20260629|
+|[luci-app-store](https://github.com/linkease/istore)|linkease|istore 应用市场|multi|20260629|
