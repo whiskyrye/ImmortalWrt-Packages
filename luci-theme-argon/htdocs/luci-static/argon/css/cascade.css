@@ -1627,6 +1627,7 @@ footer>a {
 .alert.error,
 .alert-message.error {
   background-color: var(--warning);
+  color: var(--yellow);
 }
 
 .alert h4,
@@ -3843,6 +3844,7 @@ pre.command-output {
 
 [data-page="admin-system-system"] .control-group {
   gap: 0.875rem;
+  margin: 0.25rem 0;
 }
 
 [data-page="admin-system-system"] .cbi-dynlist {
@@ -4270,6 +4272,14 @@ pre.command-output {
   position: relative;
 }
 
+.cbi-section.fade-in .cbi-title .label {
+  cursor: pointer;
+}
+
+.cbi-section.fade-in .cbi-title .label:hover {
+  color: var(--light);
+}
+
 .cbi-section.fade-in .cbi-title>div:last-child {
   position: absolute;
   right: 1.25rem;
@@ -4390,6 +4400,15 @@ pre.command-output {
   white-space: normal;
 }
 
+[data-page^="admin-services-openclash"] .tabs > #tool_label {
+  padding-top: 0;
+  padding-bottom: 0;
+  vertical-align: middle;
+}
+[data-page^="admin-services-openclash"] .tabs > #tool_label .tool_label_span {
+  display: inline-flex;
+  align-items: center;
+}
 [data-page^="admin-services-openclash"] .cbi-section-node-tabbed > .cbi-tabcontainer {
   gap: 0;
 }
