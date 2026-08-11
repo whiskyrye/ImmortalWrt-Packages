@@ -402,7 +402,7 @@ run_socks() {
 	sing-box)
 		[ "$http_port" != "0" ] && {
 			http_flag=1
-			config_file="${config_file//SOCKS/HTTP_SOCKS}"
+			config_file="${config_file%%.*}+http${config_file#${config_file%%.*}}"
 			json_add_string "local_http_address" "${bind}"
 			json_add_string "local_http_port" "${http_port}"
 		}
@@ -430,7 +430,7 @@ run_socks() {
 	xray)
 		[ "$http_port" != "0" ] && {
 			http_flag=1
-			config_file="${config_file//SOCKS/HTTP_SOCKS}"
+			config_file="${config_file%%.*}+http${config_file#${config_file%%.*}}"
 			json_add_string "local_http_address" "${bind}"
 			json_add_string "local_http_port" "${http_port}"
 		}
@@ -474,7 +474,7 @@ run_socks() {
 		json_add_string "local_socks_port" "${socks_port}"
 		[ "$http_port" != "0" ] && {
 			http_flag=1
-			config_file="${config_file//SOCKS/HTTP_SOCKS}"
+			config_file="${config_file%%.*}+http${config_file#${config_file%%.*}}"
 			json_add_string "local_http_address" "${bind}"
 			json_add_string "local_http_port" "${http_port}"
 		}
@@ -491,7 +491,7 @@ run_socks() {
 		json_add_string "local_socks_port" "${socks_port}"
 		[ "$http_port" != "0" ] && {
 			http_flag=1
-			config_file="${config_file//SOCKS/HTTP_SOCKS}"
+			config_file="${config_file%%.*}+http${config_file#${config_file%%.*}}"
 			json_add_string "local_http_address" "${bind}"
 			json_add_string "local_http_port" "${http_port}"
 		}
@@ -535,16 +535,16 @@ socks_node_switch() {
 	local flag new_node
 	eval_set_val $@
 	[ -n "$flag" ] && [ -n "$new_node" ] && {
-		local prefix pf filename
+		local suffix pf filename
 		# Kill the SS plugin process
-		for prefix in "" "HTTP_"; do
-			pf="$TMP_PATH/${prefix}${flag}_plugin.pid"
+		for suffix in "" "+http"; do
+			pf="$TMP_PATH/${flag}${suffix}_plugin.pid"
 			[ -s "$pf" ] && kill -9 "$(head -n1 "$pf")" >/dev/null 2>&1
 		done
 
 		busybox pgrep -af "$TMP_BIN_PATH" | awk -v P1="${flag}" 'BEGIN{IGNORECASE=1}$0~P1 && !/acl\/|acl_/{print $1}' | xargs kill -9 >/dev/null 2>&1
-		for prefix in "" "HTTP_" "HTTP2"; do
-			rm -rf "$TMP_PATH/${prefix}${flag}"*
+		for suffix in "" "+http" "_http"; do
+			rm -rf "$TMP_PATH/${flag}${suffix}"*
 		done
 
 		for filename in $(ls ${TMP_SCRIPT_FUNC_PATH}); do
@@ -560,7 +560,7 @@ socks_node_switch() {
 		local log=$(config_n_get $flag log 1)
 		[ "$log" == "0" ] && log_file=""
 		local http_port=$(config_n_get $flag http_port 0)
-		local http_config_file="HTTP2SOCKS_${flag}.json"
+		local http_config_file="${flag}_http.json"
 		LOG_FILE="/dev/null"
 		run_socks flag=$flag node=$new_node bind=$bind socks_port=$port config_file=$config_file http_port=$http_port http_config_file=$http_config_file log_file=$log_file
 		set_cache_var "${flag}" "$new_node"
@@ -655,58 +655,13 @@ run_global() {
 	set_cache_var "ACL_GLOBAL_redir_port" "$REDIR_PORT"
 }
 
-run_front_dns() {
-	local switch=0
-	direct_dns_shunt=$(config_t_get global direct_dns_shunt)
-	direct_dns_shunt=$(echo "${direct_dns_shunt}" | grep -v "^#")
-	[ -n "${direct_dns_shunt}" ] && switch=1
-	[ "${switch}" == "1" ] && {
-		local config_file="${TMP_PATH}/direct_dns.json"
-		local log_file="${TMP_PATH}/direct_dns.log"
-		log_file="/dev/null"
-		local listen_port=$(get_new_port 10553)
-		json_init
-		json_add_string "dns_listen_port" "${listen_port}"
-		json_add_string "direct_dns_udp_server" "${DIRECT_DNS_UDP_SERVER}"
-		json_add_string "direct_dns_udp_port" "${DIRECT_DNS_UDP_PORT}"
-		json_add_string "direct_dns_query_strategy" "${DIRECT_DNS_QUERY_STRATEGY}"
-		[ -n "${ACL_GLOBAL_node}" ] && [ -n "${TUN_DNS_PORT}" ] && {
-			json_add_string "default_dns_udp_server" "127.0.0.1"
-			json_add_string "default_dns_udp_port" "${TUN_DNS_PORT}"
-		}
-		local _json_arg="$(json_dump)"
-
-		local prefer_core=""
-		[ -n "${XRAY_BIN}" ] && prefer_core="xray"
-		[ -n "${SINGBOX_BIN}" ] && prefer_core="sing-box"
-
-		if [ "${prefer_core}" = "xray" ]; then
-			lua $UTIL_XRAY gen_front_dns_config "${_json_arg}" > $config_file
-			ln_run 0 "$XRAY_BIN" "xray" "${log_file}" run -c "$config_file"
-		elif [ "${prefer_core}" = "sing-box" ]; then
-			lua $UTIL_SINGBOX gen_front_dns_config "${_json_arg}" > $config_file
-			ln_run 0 "$SINGBOX_BIN" "sing-box" "${log_file}" run -c "$config_file"
-		else
-			return 1
-		fi
-
-		FRONT_DNS_SERVER="127.0.0.1"
-		FRONT_DNS_PORT="${listen_port}"
-	}
-}
-
 run_global_dnsmasq() {
-	[ -z "${ACL_GLOBAL_node}" ] && [ -z "${FRONT_DNS_PORT}" ] && return
+	[ -z "${ACL_GLOBAL_node}" ] && return
 	local RUN_NEW_DNSMASQ=1
 	RUN_NEW_DNSMASQ=${DNS_REDIRECT}
 	DNSMASQ_DEFAULT_DNS="${AUTO_DNS}"
 	DNSMASQ_LOCAL_DNS="${LOCAL_DNS:-${AUTO_DNS}}"
 	DNSMASQ_TUN_DNS="${TUN_DNS}"
-	[ -n "${FRONT_DNS_PORT}" ] && {
-		DNSMASQ_DEFAULT_DNS="${FRONT_DNS_SERVER}#${FRONT_DNS_PORT}"
-		DNSMASQ_LOCAL_DNS="${DNSMASQ_DEFAULT_DNS}"
-		DNSMASQ_TUN_DNS="${DNSMASQ_DEFAULT_DNS}"
-	}
 	if [ "${RUN_NEW_DNSMASQ}" == "0" ]; then
 		#The old logic will be removed in the future.
 		#Run a copy dnsmasq instance, DNS hijack that don't need a proxy devices.
@@ -772,7 +727,7 @@ start_socks() {
 				local log=$(config_n_get $id log 1)
 				[ "$log" == "0" ] && log_file=""
 				local http_port=$(config_n_get $id http_port 0)
-				local http_config_file="HTTP2SOCKS_${id}.json"
+				local http_config_file="${id}_http.json"
 				run_socks flag=$id node=$node bind=$bind socks_port=$port config_file=$config_file http_port=$http_port http_config_file=$http_config_file log_file=$log_file
 				set_cache_var "${id}" "$node"
 
@@ -1194,7 +1149,6 @@ start() {
 	fi
 	mkdir -p ${GLOBAL_ACL_PATH}
 	[ "$ENABLED_DEFAULT_ACL" == 1 ] && run_global
-	run_front_dns
 	run_global_dnsmasq
 	[ -n "$USE_TABLES" ] && source $APP_PATH/${USE_TABLES}.sh start
 	set_cache_var "USE_TABLES" "$USE_TABLES"
