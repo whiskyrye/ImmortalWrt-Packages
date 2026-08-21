@@ -55,10 +55,10 @@ o.custom_write = function(self, section, value)
 end
 
 o = s:option(ListValue, "protocol", translate("Protocol"))
+o:value("socks", "Socks")
+o:value("http", "HTTP")
 o:value("vmess", "Vmess")
 o:value("vless", "VLESS")
-o:value("http", "HTTP")
-o:value("socks", "Socks")
 o:value("shadowsocks", "Shadowsocks")
 o:value("trojan", "Trojan")
 o:value("hysteria2", "Hysteria2")
@@ -106,6 +106,7 @@ o.validate = function(self, value)
 end
 
 o = s:option(ListValue, "ss_method", translate("Encrypt Method"))
+o.rewrite_option = "method"
 for a, t in ipairs(ss_method_list) do o:value(t) end
 o:depends({ protocol = "shadowsocks" })
 
@@ -181,7 +182,7 @@ o = s:option(Value, "hysteria2_down_mbps", translate("Max download Mbps"))
 o:depends({ protocol = "hysteria2", hysteria2_ignore_client_bandwidth = false })
 
 ---- [[ TLS ]]
-o = s:option(Flag, "tls", "TLS")
+o = s:option(Flag, "tls", translate("TLS"))
 o.default = 0
 o.validate = function(self, value, t)
 	if value then
@@ -199,12 +200,10 @@ o.validate = function(self, value, t)
 end
 o:depends({ protocol = "vmess" })
 o:depends({ protocol = "vless" })
-o:depends({ protocol = "http" })
-o:depends({ protocol = "socks" })
 o:depends({ protocol = "shadowsocks" })
 o:depends({ protocol = "trojan" })
 
--- [[ REALITY ]] --
+-- [[ REALITY部分 ]] --
 o = s:option(Flag, "reality", translate("REALITY"))
 o.default = 0
 o:depends({ tls = true })
@@ -251,7 +250,8 @@ end
 -- o:value("1.3")
 --o:depends({ tls = true })
 
--- [[ TLS ]] --
+-- [[ TLS部分 ]] --
+
 o = s:option(FileUpload, "tls_certificateFile", translate("Public key absolute path"), translate("as:") .. "/etc/ssl/fullchain.pem")
 o.default = m:get(s.section, "tls_certificateFile") or "/etc/config/ssl/" .. arg[1] .. ".pem"
 if o and o:formvalue(arg[1]) then o.default = o:formvalue(arg[1]) end
@@ -306,18 +306,18 @@ o:value("httpupgrade", "HttpUpgrade")
 o:value("xhttp", "XHTTP")
 o:depends({ protocol = "vmess" })
 o:depends({ protocol = "vless" })
-o:depends({ protocol = "socks" })
 o:depends({ protocol = "shadowsocks" })
 o:depends({ protocol = "trojan" })
 
--- [[ WebSocket ]]--
+-- [[ WebSocket部分 ]]--
+
 o = s:option(Value, "ws_host", translate("WebSocket Host"))
 o:depends({ transport = "ws" })
 
 o = s:option(Value, "ws_path", translate("WebSocket Path"))
 o:depends({ transport = "ws" })
 
--- [[ HttpUpgrade ]]--
+-- [[ HttpUpgrade部分 ]]--
 o = s:option(Value, "httpupgrade_host", translate("HttpUpgrade Host"))
 o:depends({ transport = "httpupgrade" })
 
@@ -325,7 +325,7 @@ o = s:option(Value, "httpupgrade_path", translate("HttpUpgrade Path"))
 o.placeholder = "/"
 o:depends({ transport = "httpupgrade" })
 
--- [[ XHTTP ]]--
+-- [[ XHTTP部分 ]]--
 o = s:option(Value, "xhttp_host", translate("XHTTP Host"))
 o:depends({ transport = "xhttp" })
 
@@ -341,28 +341,23 @@ o = s:option(Value, "xhttp_maxconcurrentuploads", translate("maxConcurrentUpload
 o.default = "10"
 o:depends({ transport = "xhttp" })
 
-o = s:option(Value, "splithttp_maxuploadsize", translate("maxUploadSize"))
-o.default = "1000000"
-o:depends({ transport = "splithttp" })
+-- [[ TCP部分 ]]--
 
-o = s:option(Value, "splithttp_maxconcurrentuploads", translate("maxConcurrentUploads"))
-o.default = "10"
-o:depends({ transport = "splithttp" })
-
--- [[ TCP ]]--
-
+-- TCP伪装
 o = s:option(ListValue, "tcp_guise", translate("Camouflage Type"))
 o:value("none", "none")
 o:value("http", "http")
 o:depends({ transport = "raw" })
 
+-- HTTP域名
 o = s:option(DynamicList, "tcp_guise_http_host", translate("HTTP Host"))
 o:depends({ tcp_guise = "http" })
 
+-- HTTP路径
 o = s:option(DynamicList, "tcp_guise_http_path", translate("HTTP Path"))
 o:depends({ tcp_guise = "http" })
 
--- [[ mKCP ]]--
+-- [[ mKCP部分 ]]--
 
 o = s:option(ListValue, "mkcp_guise", translate("Camouflage Type"), translate('<br />none: default, no masquerade, data sent is packets with no characteristics.<br />srtp: disguised as an SRTP packet, it will be recognized as video call data (such as FaceTime).<br />utp: packets disguised as uTP will be recognized as bittorrent downloaded data.<br />wechat-video: packets disguised as WeChat video calls.<br />dtls: disguised as DTLS 1.2 packet.<br />wireguard: disguised as a WireGuard packet. (not really WireGuard protocol)<br />dns: Disguising traffic as DNS requests.'))
 for a, t in ipairs(header_type_list) do o:value(t) end
@@ -379,7 +374,7 @@ o:depends({ transport = "mkcp" })
 o = s:option(Value, "mkcp_seed", translate("KCP Seed"))
 o:depends({ transport = "mkcp" })
 
--- [[ gRPC ]]--
+-- [[ gRPC部分 ]]--
 o = s:option(Value, "grpc_serviceName", "ServiceName")
 o:depends({ transport = "grpc" })
 
@@ -421,7 +416,7 @@ o:depends({ protocol = "vless", custom = false })
 o:depends({ protocol = "shadowsocks", custom = false })
 o:depends({ protocol = "trojan", custom = false })
 
--- [[ Fallback ]]--
+-- [[ Fallback部分 ]]--
 o = s:option(Flag, "fallback", translate("Fallback"))
 o:depends({ protocol = "vless", transport = "raw" })
 o:depends({ protocol = "trojan", transport = "raw" })
