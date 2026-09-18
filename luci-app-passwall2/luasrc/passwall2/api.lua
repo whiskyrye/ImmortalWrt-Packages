@@ -192,12 +192,16 @@ function sh_uci_commit(config)
 	exec_call(string.format("uci -q commit %s", config))
 end
 
+function del_cache_var(key)
+	sys.call(string.format('. /usr/share/passwall2/utils.sh ; del_cache_var "%s"', key))
+end
+
 function set_cache_var(key, val)
-	sys.call(string.format('. /usr/share/passwall2/utils.sh ; set_cache_var %s "%s"', key, val))
+	sys.call(string.format('. /usr/share/passwall2/utils.sh ; set_cache_var "%s" "%s"', key, val))
 end
 
 function get_cache_var(key)
-	local val = sys.exec(string.format('. /usr/share/passwall2/utils.sh ; echo -n $(get_cache_var %s)', key))
+	local val = sys.exec(string.format('. /usr/share/passwall2/utils.sh ; echo -n $(get_cache_var "%s")', key))
 	if val == "" then val = nil end
 	return val
 end
@@ -288,12 +292,15 @@ end
 
 function curl_proxy(url, file, args)
 	-- Use the proxy
-	local socks_server = get_cache_var("GLOBAL_SOCKS_server")
-	if socks_server and socks_server ~= "" then
-		if not args then args = {} end
-		local tmp_args = clone(args)
-		tmp_args[#tmp_args + 1] = "-x socks5h://" .. socks_server
-		return curl_base(url, file, tmp_args)
+	local socks_port = get_cache_var(("ACL_${flag}_node_socks_port"):gsub("${flag}", "acl_default"))
+	if socks_port then
+		local socks_server = "127.0.0.1:%s" % socks_port
+		if socks_server and socks_server ~= "" then
+			if not args then args = {} end
+			local tmp_args = clone(args)
+			tmp_args[#tmp_args + 1] = "-x socks5h://" .. socks_server
+			return curl_base(url, file, tmp_args)
+		end
 	end
 	return nil, nil
 end
@@ -2053,4 +2060,12 @@ function parseDNS(dns)
 		end
 	end
 	return dns, 53
+end
+
+function get_socks_port_by_cache(node_id)
+	return get_cache_var("node_%s_socks_port" % { node_id })
+end
+
+function set_socks_port_to_cache(node_id, v)
+	set_cache_var("node_%s_socks_port" % { node_id }, v)
 end

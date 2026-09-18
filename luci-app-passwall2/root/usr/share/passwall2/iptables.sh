@@ -230,7 +230,7 @@ gen_shunt_list() {
 	}
 	[ -n "${_SHUNT_LIST4}" ] && eval ${shunt_list4_var_name}=\"${_SHUNT_LIST4}\"
 	[ -n "${_SHUNT_LIST6}" ] && eval ${shunt_list6_var_name}=\"${_SHUNT_LIST6}\"
-	set_cache_var "gen_shunt_list_${node}" "1"
+	set_cache_var "node_${node}_gen_shunt_list" "1"
 }
 
 add_shunt_t_rule() {
@@ -261,7 +261,7 @@ load_acl() {
 	for sid in $(jsonfilter -s "${ACL_JSON}" -e '$.acl[*].flag'); do
 		eval local $(cat "${TMP_ACL_PATH}/${sid}/var")
 
-		[ -z "$(get_cache_var "gen_shunt_list_${node}")" ] && [ -n "${node}" ] && gen_shunt_list "${node}" shunt_list4 shunt_list6
+		[ -z "$(get_cache_var "node_${node}_gen_shunt_list")" ] && [ -n "${node}" ] && gen_shunt_list "${node}" shunt_list4 shunt_list6
 		[ -n "${use}" ] && local dns_redirect_port=$(get_cache_var "ACL_${use}_dns_port")
 
 		local ipt_tmp=$ipt_n
@@ -755,8 +755,8 @@ add_firewall_rule() {
 
 	$ipt_m -N PSW2
 	# Socket Only TCP, UDP Invalid.
-	$ipt_m -A PSW2 -p tcp -m socket -j MARK --set-mark ${FWMARK}
-	$ipt_m -A PSW2 -p tcp -m socket -j ACCEPT
+	$ipt_m -A PSW2 -p tcp -m socket --transparent -j MARK --set-mark ${FWMARK}
+	$ipt_m -A PSW2 -p tcp -m socket --transparent -j ACCEPT
 	$ipt_m -A PSW2 $(dst $IPSET_VPS) -j RETURN
 	$ipt_m -A PSW2 $(comment "WAN_IP_RETURN") $(dst $IPSET_WAN) -j RETURN
 	$ipt_m -A PSW2 -m conntrack --ctdir REPLY -j RETURN
@@ -798,8 +798,8 @@ add_firewall_rule() {
 
 	$ip6t_m -N PSW2
 	# Socket Only TCP, UDP Invalid.
-	$ip6t_m -A PSW2 -p tcp -m socket -j MARK --set-mark ${FWMARK}
-	$ip6t_m -A PSW2 -p tcp -m socket -j ACCEPT
+	$ip6t_m -A PSW2 -p tcp -m socket --transparent -j MARK --set-mark ${FWMARK}
+	$ip6t_m -A PSW2 -p tcp -m socket --transparent -j ACCEPT
 	$ip6t_m -A PSW2 $(dst $IPSET_VPS6) -j RETURN
 	$ip6t_m -A PSW2 $(comment "WAN6_IP_RETURN") $(dst $IPSET_WAN6) -j RETURN
 	$ip6t_m -A PSW2 -m conntrack --ctdir REPLY -j RETURN
