@@ -817,7 +817,7 @@ filter_node() {
 	local address=$(config_n_get "$node" address)
 	local port=$(config_n_get "$node" port)
 	local hop=$(config_n_get "$node" hysteria2_hop)
-	[ -n "$hop" ] && port="${port:+$port,}$hop" 
+	[ -n "$hop" ] && port="${port:+$port,}$hop"
 	[ -z "$address" ] && return 1
 	echo "$address" | grep -Eq "$EXCLUDE_VPSIP" && return 1
 	[ -z "$port" ] && return 1
@@ -1597,6 +1597,7 @@ stop() {
 		rm -rf $TMP_PATH2/singbox*
 		rm -rf $TMP_PATH2/dnsmasq*
 		rm -rf $TMP_PATH2/geo_output
+		rm -rf $TMP_PATH2/geodata
 		rm -rf $TMP_PATH2/user_rules
 	}
 	flush_include
