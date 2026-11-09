@@ -43,8 +43,9 @@ class PACKAGE(object):
 
     def __ListDir(self, path):
         dirList = []
+        exclude_dirs = ['sms-tool', 'doc', 'docs', 'tests', 'scripts', 'PIC', 'mihomo-alpha']
         for entry in os.scandir(path):
-            if entry.is_dir() and entry.path != path and not entry.name.startswith('.') and entry.name not in ['sms-tool']:
+            if entry.is_dir() and entry.path != path and not entry.name.startswith('.') and entry.name not in exclude_dirs:
                 dirList.append(entry.path)
         return dirList
 
