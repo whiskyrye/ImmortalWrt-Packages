@@ -18,7 +18,7 @@
 |[luci-app-smartdns](https://github.com/pymumu/luci-app-smartdns)|pymumu|smartdns|single|20261102|
 |[luci-app-tailscale](https://github.com/asvow/luci-app-tailscale)|asvow|tailscale|single|20250509|
 |[luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon)|jerrykuku|argon 主题|single|20261106|
-|[passwall-packages](https://github.com/xiaorouji/openwrt-passwall-packages)|xiaorouji|passwall、passwall2 依赖|multi|20261031|
+|[passwall-packages](https://github.com/xiaorouji/openwrt-passwall-packages)|xiaorouji|passwall、passwall2 依赖|multi|20261109|
 |[luci-app-onliner](https://github.com/danchexiaoyang/luci-app-onliner)|danchexiaoyang|在线设备查看|multi|20260430|
 |[luci-app-easytier](https://github.com/EasyTier/luci-app-easytier)|EasyTier|EasyTier异地组网|multi|20261014|
 |[luci-app-momo](https://github.com/nikkinikki-org/OpenWrt-momo)|nikki-org|momo singbox插件|single|20261014|
