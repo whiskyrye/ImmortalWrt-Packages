@@ -10,6 +10,7 @@
 |[packages_lang_golang](https://github.com/sbwml/packages_lang_golang)|sbwml|golang(geodata、xray 等依赖高版本 go)|multi|20261020|
 |[v2ray-geodata](https://github.com/sbwml/v2ray-geodata)|sbwml|mosdns 依赖|single|20250125|
 |[luci-app-honk](https://github.com/QiuSimons/luci-app-honk)|QiuSimons|Honk基于eBPF的透明代理|multi|20261109|
+|[vmlinux-btf](https://github.com/QiuSimons/vmlinux-btf)|QiuSimons|分离的 BTF (vmlinux) 文件|single|20261109|
 |[OpenWrt-nikki](https://github.com/nikkinikki-org/OpenWrt-nikki)|nikki-org|nikki mihomo插件|multi|20261014|
 |[luci-app-partexp](https://github.com/sirpdboy/luci-app-partexp)|sirpdboy|分区管理|multi|20261030|
 |[openwrt-passwall](https://github.com/Openwrt-Passwall/openwrt-passwall)|Openwrt-Passwall|openwrt-passwall|multi|20261110|
